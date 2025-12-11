@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Midnight refresh + auto-click booking slot with priority + auto-confirm.
-// @match        *://*/*
+// @match        https://book.everyoneactive.com/*
 // @grant        none
 // ==/UserScript==
 
