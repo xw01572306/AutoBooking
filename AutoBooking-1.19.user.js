@@ -9,7 +9,7 @@
 (function() {
     'use strict';
 
-    const times = ["18:00", "17:00", "19:00"];
+    const times = ["15:00", "14:00", "16:00"];
     const JUST_REFRESHED = sessionStorage.getItem("just_refreshed") === "1";
 
     function log(x){ console.log("[AutoBooking] " + x); }
