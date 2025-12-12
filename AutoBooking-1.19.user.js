@@ -2,7 +2,7 @@
 // @name         AutoBooking
 // @namespace    http://tampermonkey.net/
 // @version      1.19
-// @match        https://book.everyoneactive.com/**
+// @match        https://book.everyoneactive.com/*
 // @grant        none
 // ==/UserScript==
 
