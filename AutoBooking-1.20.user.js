@@ -68,7 +68,6 @@
         }, 1000);
     }
 
-    // ✅ 关键：等待按钮真正 ready
     function waitUntilReady(getBtn, cb) {
         let lastBtn = null;
         let stableCount = 0;
@@ -87,7 +86,7 @@
                     lastBtn = btn;
                 }
 
-                if (stableCount >= 2) { // 连续两次稳定
+                if (stableCount >= 2) { 
                     clearInterval(timer);
                     log("Button ready.");
                     cb(btn);
