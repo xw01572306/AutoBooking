@@ -1,0 +1,205 @@
+// ==UserScript==
+// @name         AutoBooking Pro Final
+// @namespace    http://tampermonkey.net/
+// @version      12.0
+// @match        https://book.everyoneactive.com/**
+// @grant        none
+// ==/UserScript==
+
+(function() {
+'use strict';
+
+const times = ["17:00","18:00","20:00"];
+const JUST_REFRESHED = sessionStorage.getItem("just_refreshed") === "1";
+
+const SLOT_CHECK_INTERVAL = 500;
+const CONFIRM_CLICK_INTERVAL = 150;
+const SLOT_RETRY_DELAY = 3000;
+
+let slotLocked = false;
+
+function log(msg){
+    console.log("[AutoBooking] " + msg);
+}
+
+function ding(){
+    try{
+        new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+    }catch(e){}
+}
+
+function getAllInputs(){
+    return Array.from(document.querySelectorAll("input"));
+}
+
+function isAvailableButton(el){
+    if(!el) return false;
+    const cls = el.className || "";
+    return !el.disabled && (
+        cls.includes("success") ||
+        cls.includes("Success") ||
+        cls.includes("Available") ||
+        cls.includes("available")
+    );
+}
+
+function findGreenButton(time){
+    const btns = getAllInputs();
+    for(const b of btns){
+        const val = (b.value || "").trim();
+        if(val === time && isAvailableButton(b)){
+            return b;
+        }
+    }
+    return null;
+}
+
+function findConfirmButton(){
+    return document.querySelector("input#ctl00_MainContent_btnBook");
+}
+
+function isOnConfirmStep(){
+    return !!findConfirmButton();
+}
+
+function spamClick(getter,label,interval){
+    let lastLog = 0;
+
+    setInterval(()=>{
+        const el = getter();
+        if(!el) return;
+
+        el.click();
+
+        const now = Date.now();
+        if(now - lastLog > 800){
+            log("Clicking " + label);
+            ding();
+            lastLog = now;
+        }
+
+    },interval);
+}
+
+function clickPreferredSlotOnce(reason){
+
+    if(slotLocked) return;
+    if(isOnConfirmStep()) return;
+
+    for(const time of times){
+
+        const btn = findGreenButton(time);
+
+        if(btn){
+
+            slotLocked = true;
+
+            log("Clicking slot once " + time);
+
+            ding();
+
+            btn.click();
+
+            setTimeout(()=>{
+
+                if(!isOnConfirmStep()){
+                    slotLocked = false;
+                    log("Retry enabled");
+                }
+
+            },SLOT_RETRY_DELAY);
+
+            return;
+        }
+    }
+}
+
+function startSlotWatcher(reason){
+
+    setInterval(()=>{
+
+        clickPreferredSlotOnce(reason);
+
+    },SLOT_CHECK_INTERVAL);
+}
+
+function midnightRefresh(){
+
+    const now = new Date();
+    const next = new Date();
+
+    next.setHours(0,0,0,0);
+
+    if(next <= now){
+        next.setDate(next.getDate()+1);
+    }
+
+    const ms = next - now;
+
+    let left = Math.floor(ms/1000);
+
+    const timer = setInterval(()=>{
+
+        left--;
+
+        if(left <= 60 && left > 0){
+            log("Refresh in " + left + "s");
+        }
+
+        if(left <= 0){
+            clearInterval(timer);
+            sessionStorage.setItem("just_refreshed","1");
+            location.reload();
+        }
+
+    },1000);
+}
+
+function detectMode(){
+
+    const now = new Date();
+    const h = now.getHours();
+
+    if(h >= 0 && h < 3){
+        log("Detect mode ON");
+        startSlotWatcher("detect");
+    }
+}
+
+function keepAlive(){
+
+    setInterval(()=>{
+
+        log("Keep-alive.");
+
+    },600000);
+}
+
+function init(){
+
+    log("Script active.");
+
+    keepAlive();
+
+    midnightRefresh();
+
+    spamClick(findConfirmButton,"confirm",CONFIRM_CLICK_INTERVAL);
+
+    if(JUST_REFRESHED){
+
+        sessionStorage.removeItem("just_refreshed");
+
+        log("Booking mode");
+
+        startSlotWatcher("after-refresh");
+
+    }else{
+
+        detectMode();
+
+    }
+}
+
+init();
+
+})();
